@@ -9,3 +9,7 @@ services:
 
 volumes:
   tollbooth-data:
+    # Pin the plain name so compose shares the volume with `docker run
+    # -v tollbooth-data:/data` (compose would otherwise prefix it with the
+    # project name and start from an empty database).
+    name: tollbooth-data
