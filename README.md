@@ -85,13 +85,24 @@ Tools exposed: `memory_store`, `memory_recall`, `watch_add`, `watch_check`, `wat
 
 ## Teach your agent to use it
 
-A tool an agent doesn't know *when* to reach for goes unused. This repo ships a
-skill file — [`.claude/skills/tollbooth/SKILL.md`](.claude/skills/tollbooth/SKILL.md) —
-that teaches an agent when to store a memory, when a watch is worth creating,
-when to escalate from fetch to render, and when not to bother. Copy the
-directory into your own project's `.claude/skills/`, or use its contents as a
-system-prompt section for non-Claude harnesses (GPT, DeepSeek, GLM, Grok — the
-API is plain HTTP, so the same instructions work everywhere).
+A tool an agent doesn't know *when* to reach for goes unused. This repo ships
+four skills under [`.claude/skills/`](.claude/skills/):
+
+| Skill | Teaches |
+|---|---|
+| `tollbooth` | when to use each primitive — and when not to bother |
+| `checkpoint` | on-demand: save this session's durable conclusions to the board |
+| `janitor` | compact a board into a digest (run it with a cheap model) |
+| `resume` | warm-start a new session from a board instead of re-reading transcripts |
+
+Copy them into `~/.claude/skills/` to have them in every project (or into one
+project's `.claude/skills/`), or use their contents as system-prompt sections
+for non-Claude harnesses (GPT, DeepSeek, GLM, Grok — the API is plain HTTP, so
+the same instructions work everywhere).
+
+```sh
+cp -R .claude/skills/* ~/.claude/skills/
+```
 
 For zero-token context capture, [`scripts/tollbooth-hook.mjs`](scripts/tollbooth-hook.mjs)
 posts each session's closing context to a per-project board automatically —
