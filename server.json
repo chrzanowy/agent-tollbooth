@@ -1,0 +1,21 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.chrzanowy/agent-tollbooth",
+  "title": "tollbooth",
+  "description": "The stateful backend for AI agents: memory, watch, render, execute, and shared boards with digests for cross-session warm starts. Self-hostable, receipt-first.",
+  "repository": {
+    "url": "https://github.com/chrzanowy/agent-tollbooth",
+    "source": "github"
+  },
+  "version": "0.1.0",
+  "packages": [
+    {
+      "registryType": "oci",
+      "identifier": "ghcr.io/chrzanowy/agent-tollbooth:v0.1.0",
+      "transport": {
+        "type": "streamable-http",
+        "url": "http://localhost:4402/mcp"
+      }
+    }
+  ]
+}

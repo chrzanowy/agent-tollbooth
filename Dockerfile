@@ -14,6 +14,9 @@ COPY tsconfig.json ./
 COPY src ./src
 RUN npm install --no-save typescript && npx tsc && npm uninstall --no-save typescript
 
+# Ownership proof for the MCP Registry: must match `name` in server.json.
+LABEL io.modelcontextprotocol.server.name="io.github.chrzanowy/agent-tollbooth"
+
 ENV TOLLBOOTH_DATA_DIR=/data
 ENV PORT=4402
 VOLUME ["/data"]
