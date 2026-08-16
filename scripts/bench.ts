@@ -168,6 +168,11 @@ async function main() {
       "recall by full-text query",
       Array.isArray(byQuery.result) && byQuery.result.some((m: any) => m.key === key),
     );
+    const multiWord = await api("GET", `/memory?q=${encodeURIComponent("42 answer")}&ns=bench`);
+    ctx.check(
+      "multi-word query matches non-contiguous words",
+      Array.isArray(multiWord.result) && multiWord.result.some((m: any) => m.key === key),
+    );
     await api("POST", "/memory", { key, content: "updated to 43", ns: "bench" });
     const updated = await api("GET", `/memory?key=${key}&ns=bench`);
     ctx.check("overwrite same key", updated.result?.content === "updated to 43");

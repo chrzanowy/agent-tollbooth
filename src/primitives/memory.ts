@@ -48,21 +48,28 @@ export function get(key: string, ns = "default"): Memory | null {
 }
 
 export function search(query: string, ns?: string, limit = 20): Memory[] {
-  const like = `%${query}%`;
+  // Tokenized AND search: every word must match somewhere (key, content, or
+  // tags), so multi-word problem queries like "publish registry" hit entries
+  // that contain the words non-contiguously.
+  const tokens = query.split(/\s+/).filter(Boolean);
+  const likes = (tokens.length ? tokens : [""]).map((t) => `%${t}%`);
+  const perToken = "(key LIKE ? OR content LIKE ? OR tags LIKE ?)";
+  const where = likes.map(() => perToken).join(" AND ");
+  const params = likes.flatMap((l) => [l, l, l]);
   const rows = (
     ns
       ? db
           .prepare(
-            `SELECT * FROM memories WHERE ns = ? AND (key LIKE ? OR content LIKE ? OR tags LIKE ?)
+            `SELECT * FROM memories WHERE ns = ? AND ${where}
              ORDER BY updated_at DESC LIMIT ?`,
           )
-          .all(ns, like, like, like, limit)
+          .all(ns, ...params, limit)
       : db
           .prepare(
-            `SELECT * FROM memories WHERE key LIKE ? OR content LIKE ? OR tags LIKE ?
+            `SELECT * FROM memories WHERE ${where}
              ORDER BY updated_at DESC LIMIT ?`,
           )
-          .all(like, like, like, limit)
+          .all(...params, limit)
   ) as unknown as MemoryRow[];
   return rows.map(rowToMemory);
 }

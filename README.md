@@ -93,7 +93,7 @@ Tools exposed: `memory_store`, `memory_recall`, `watch_add`, `watch_check`, `wat
 ## Teach your agent to use it
 
 A tool an agent doesn't know *when* to reach for goes unused. This repo ships
-four skills under [`.claude/skills/`](.claude/skills/):
+five skills under [`.claude/skills/`](.claude/skills/):
 
 | Skill | Teaches |
 |---|---|
@@ -101,6 +101,7 @@ four skills under [`.claude/skills/`](.claude/skills/):
 | `checkpoint` | on-demand: save this session's durable conclusions to the board |
 | `janitor` | compact a board into a digest (run it with a cheap model) |
 | `warmstart` | warm-start a new session from a board instead of re-reading transcripts (named to avoid the reserved `/resume` built-in) |
+| `toolbox` | a machine-global log of problem → tool that worked (ns=`toolbox` in memory): recall before you build, store only what you watched succeed |
 
 Copy them into `~/.claude/skills/` to have them in every project (or into one
 project's `.claude/skills/`), or use their contents as system-prompt sections
