@@ -70,6 +70,16 @@ claude mcp add --transport http tollbooth http://localhost:4402/mcp
 
 Tools exposed: `memory_store`, `memory_recall`, `watch_add`, `watch_check`, `watch_list`, `render_extract`, `execute_run`.
 
+## Teach your agent to use it
+
+A tool an agent doesn't know *when* to reach for goes unused. This repo ships a
+skill file — [`.claude/skills/tollbooth/SKILL.md`](.claude/skills/tollbooth/SKILL.md) —
+that teaches an agent when to store a memory, when a watch is worth creating,
+when to escalate from fetch to render, and when not to bother. Copy the
+directory into your own project's `.claude/skills/`, or use its contents as a
+system-prompt section for non-Claude harnesses (GPT, DeepSeek, GLM, Grok — the
+API is plain HTTP, so the same instructions work everywhere).
+
 ## Configuration
 
 | Env var | Default | Meaning |
