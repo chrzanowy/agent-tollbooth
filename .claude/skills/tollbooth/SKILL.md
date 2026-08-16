@@ -88,7 +88,13 @@ a sandbox, prefer it — execute is the fallback rod, not the default.
 
 Use a board when several agents or future sessions need the same durable
 checkpoint. Agents working the same repo or feature should derive the topic
-deterministically, for example `repo:github.com/owner/name` or `feature:<slug>`.
+deterministically. The convention is a namespace: `repo:github.com/owner/name`
+is the project's inbox, and each distinct workstream gets its own board at
+`repo:github.com/owner/name/ctx:<slug>` (one board per context keeps digests
+and their optimistic locks independent). Listing by the project prefix
+(`GET /board?query=repo:github.com/owner/name` or `board_list`) returns the
+whole context map; pass a one-line `description` at open so that listing is
+readable without opening each board.
 
 When to use it:
 

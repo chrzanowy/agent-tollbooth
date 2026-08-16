@@ -41,6 +41,7 @@ CREATE TABLE IF NOT EXISTS snapshots (
 CREATE TABLE IF NOT EXISTS boards (
   id INTEGER PRIMARY KEY,
   topic TEXT NOT NULL UNIQUE,
+  description TEXT,
   created_at TEXT NOT NULL
 );
 
@@ -67,3 +68,9 @@ CREATE TABLE IF NOT EXISTS board_digests (
 
 CREATE INDEX IF NOT EXISTS idx_board_entries ON board_entries(board_id, seq);
 `);
+
+// Databases created before boards had descriptions lack the column.
+const boardColumns = db.prepare(`PRAGMA table_info(boards)`).all() as Array<{ name: string }>;
+if (!boardColumns.some((col) => col.name === "description")) {
+  db.exec(`ALTER TABLE boards ADD COLUMN description TEXT`);
+}

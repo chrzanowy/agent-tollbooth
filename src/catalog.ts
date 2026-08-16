@@ -82,7 +82,7 @@ export const CATALOG: CatalogEntry[] = [
   {
     name: "board.open",
     description:
-      "Open or rendezvous with a shared board by topic; agents working the same repo/feature should derive the topic deterministically, e.g. `repo:github.com/owner/name` or `feature:<slug>`.",
+      "Open or rendezvous with a shared board by topic; derive topics deterministically. Convention: `repo:<host>/<owner>/<name>` is a project's inbox, `repo:<host>/<owner>/<name>/ctx:<slug>` is one workstream within it — listing boards by the repo prefix returns the project's whole context map. Pass a one-line description at open so listings can show what each context is about.",
     price_usd: price("board.open"),
     expected_latency_ms: 10,
     requires: "a rendezvous point agents can find without a shared parent",

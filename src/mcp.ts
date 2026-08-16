@@ -126,9 +126,10 @@ export function buildMcpServer(): McpServer {
     "board_open",
     {
       description: describe("board.open"),
-      inputSchema: { topic: z.string() },
+      inputSchema: { topic: z.string(), description: z.string().optional() },
     },
-    async ({ topic }) => asText(await withReceipt("board.open", async () => board.open(topic))),
+    async ({ topic, description }) =>
+      asText(await withReceipt("board.open", async () => board.open(topic, description))),
   );
 
   server.registerTool(

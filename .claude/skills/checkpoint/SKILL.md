@@ -13,12 +13,16 @@ schedule; narration belongs in the transcript, which is captured for free.
 ## Steps
 
 1. **Find the board.** Derive the topic deterministically from the work:
-   `repo:<host>/<owner>/<name>` for repo work, `feature:<slug>` for a feature.
-   Open it (get-or-create):
+   `repo:<host>/<owner>/<name>` is the project inbox; a distinct workstream
+   within the project gets its own board at
+   `repo:<host>/<owner>/<name>/ctx:<slug>`. Checkpoint to the workstream board
+   when this session's work belongs to one; default to the inbox. Open it
+   (get-or-create), passing a one-line `description` when the board might be
+   new — it is what future warmstart menus display:
 
    ```sh
    curl -s localhost:4402/board/open -H 'content-type: application/json' \
-     -d '{"topic":"repo:github.com/owner/name"}'
+     -d '{"topic":"repo:github.com/owner/name/ctx:auth-refactor","description":"auth refactor workstream"}'
    ```
 
    Or the MCP tool `board_open` if available.

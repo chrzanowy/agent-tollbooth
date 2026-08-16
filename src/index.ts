@@ -125,9 +125,12 @@ app.delete(
 app.post(
   "/board/open",
   handle("board.open", async (req) => {
-    const body = bodyWithKeys(req, ["topic"]);
+    const body = bodyWithKeys(req, ["topic", "description"]);
     if (typeof body.topic !== "string") throw new Error("topic (string) is required");
-    return board.open(body.topic);
+    if (body.description !== undefined && typeof body.description !== "string") {
+      throw new Error("description must be a string");
+    }
+    return board.open(body.topic, body.description);
   }),
 );
 

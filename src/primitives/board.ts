@@ -9,6 +9,7 @@ export interface Author {
 export interface Board {
   id: number;
   topic: string;
+  description: string | null;
   created_at: string;
 }
 
@@ -30,6 +31,7 @@ export interface Digest {
 interface BoardRow {
   id: number;
   topic: string;
+  description: string | null;
   created_at: string;
   latest_seq?: number;
   digest_version?: number | null;
@@ -100,7 +102,12 @@ function assertBoardId(boardId: number): void {
 }
 
 function rowToBoard(row: BoardRow): Board {
-  return { id: Number(row.id), topic: row.topic, created_at: row.created_at };
+  return {
+    id: Number(row.id),
+    topic: row.topic,
+    description: row.description ?? null,
+    created_at: row.created_at,
+  };
 }
 
 function rowToEntry(row: EntryRow): Entry {
@@ -123,9 +130,9 @@ function rowToDigest(row: DigestRow): Digest {
 }
 
 function getBoard(boardId: number): Board | null {
-  const row = db.prepare(`SELECT id, topic, created_at FROM boards WHERE id = ?`).get(boardId) as
-    | BoardRow
-    | undefined;
+  const row = db
+    .prepare(`SELECT id, topic, description, created_at FROM boards WHERE id = ?`)
+    .get(boardId) as BoardRow | undefined;
   return row ? rowToBoard(row) : null;
 }
 
@@ -136,20 +143,38 @@ function requireBoard(boardId: number): Board {
   return board;
 }
 
-export function open(topic: string): Board & { latest_seq: number; digest_version: number | null } {
+export function open(
+  topic: string,
+  description?: string,
+): Board & { latest_seq: number; digest_version: number | null } {
   if (typeof topic !== "string") throw new Error("topic (string) is required");
   const normalizedTopic = topic.trim();
   if (normalizedTopic.length < 1 || normalizedTopic.length > 512) {
     throw new Error("topic must be a string of 1-512 characters");
   }
+  let normalizedDescription: string | undefined;
+  if (description !== undefined) {
+    if (typeof description !== "string") throw new Error("description must be a string");
+    normalizedDescription = description.trim();
+    if (normalizedDescription.length < 1 || normalizedDescription.length > 500) {
+      throw new Error("description must be a string of 1-500 characters");
+    }
+  }
 
-  db.prepare(`INSERT OR IGNORE INTO boards (topic, created_at) VALUES (?, ?)`).run(
+  db.prepare(`INSERT OR IGNORE INTO boards (topic, description, created_at) VALUES (?, ?, ?)`).run(
     normalizedTopic,
+    normalizedDescription ?? null,
     new Date().toISOString(),
   );
+  if (normalizedDescription !== undefined) {
+    db.prepare(`UPDATE boards SET description = ? WHERE topic = ?`).run(
+      normalizedDescription,
+      normalizedTopic,
+    );
+  }
   const row = db
     .prepare(
-      `SELECT b.id, b.topic, b.created_at,
+      `SELECT b.id, b.topic, b.description, b.created_at,
               COALESCE((SELECT MAX(e.seq) FROM board_entries e WHERE e.board_id = b.id), 0) AS latest_seq,
               (SELECT MAX(d.version) FROM board_digests d WHERE d.board_id = b.id) AS digest_version
        FROM boards b WHERE b.topic = ?`,
@@ -169,14 +194,14 @@ export function listBoards(query?: string): Array<Board & { latest_seq: number }
     like === undefined
       ? db
           .prepare(
-            `SELECT b.id, b.topic, b.created_at,
+            `SELECT b.id, b.topic, b.description, b.created_at,
                     COALESCE((SELECT MAX(e.seq) FROM board_entries e WHERE e.board_id = b.id), 0) AS latest_seq
              FROM boards b ORDER BY b.created_at DESC, b.id DESC LIMIT 100`,
           )
           .all()
       : db
           .prepare(
-            `SELECT b.id, b.topic, b.created_at,
+            `SELECT b.id, b.topic, b.description, b.created_at,
                     COALESCE((SELECT MAX(e.seq) FROM board_entries e WHERE e.board_id = b.id), 0) AS latest_seq
              FROM boards b WHERE b.topic LIKE ?
              ORDER BY b.created_at DESC, b.id DESC LIMIT 100`,

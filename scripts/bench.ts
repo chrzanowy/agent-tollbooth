@@ -242,6 +242,45 @@ async function main() {
     return Boolean(first.receipt);
   });
 
+  await scenario("board", "namespaced contexts list with descriptions", async (ctx) => {
+    const prefix = `bench:ns:${runId}`;
+    const inbox = await api("POST", "/board/open", {
+      topic: prefix,
+      description: "project inbox",
+    });
+    const auth = await api("POST", "/board/open", {
+      topic: `${prefix}/ctx:auth`,
+      description: "auth refactor workstream",
+    });
+    boardIds.add(inbox.result?.id);
+    boardIds.add(auth.result?.id);
+    ctx.check("description returned at open", inbox.result?.description === "project inbox");
+    const reopened = await api("POST", "/board/open", { topic: prefix });
+    ctx.check(
+      "reopen without description keeps it",
+      reopened.result?.description === "project inbox",
+    );
+    const renamed = await api("POST", "/board/open", {
+      topic: prefix,
+      description: "project inbox v2",
+    });
+    ctx.check(
+      "reopen with description updates it",
+      renamed.result?.description === "project inbox v2",
+    );
+    const listed = await api("GET", `/board?query=${encodeURIComponent(prefix)}`);
+    const topics = (listed.result ?? []).map((b: any) => b.topic);
+    ctx.check(
+      "prefix query returns inbox and ctx boards",
+      topics.includes(prefix) && topics.includes(`${prefix}/ctx:auth`),
+    );
+    ctx.check(
+      "listing carries descriptions",
+      (listed.result ?? []).some((b: any) => b.description === "auth refactor workstream"),
+    );
+    return Boolean(inbox.receipt);
+  });
+
   let postsBoardId: number | undefined;
   await scenario("board", "concurrent posts are gapless", async (ctx) => {
     const opened = await api("POST", "/board/open", { topic: `bench:posts:${runId}` });

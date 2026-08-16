@@ -11,9 +11,20 @@ summarize it back to the user.
 
 ## Steps
 
-1. **Find the board.** Derive the topic from the project
-   (`repo:<host>/<owner>/<name>` from the git remote) unless the user named
-   one, then open it (`board_open` or `POST /board/open`).
+1. **Find the board.** If the user named a topic or context, open it directly
+   (`board_open` or `POST /board/open`). Otherwise derive the project prefix
+   from the git remote (`repo:<host>/<owner>/<name>`) and list its contexts —
+   the prefix query is the project's context map:
+
+   ```sh
+   curl -s 'localhost:4402/board?query=repo:<host>/<owner>/<name>'
+   ```
+
+   (or `board_list`). Each row carries `topic`, `description`, and
+   `latest_seq`. If there is exactly one board, use it. If there are several
+   (`repo:.../ctx:<slug>` workstreams beside the project inbox), show the user
+   a short menu — description + topic per line — and ask which context to
+   resume; do not guess between active workstreams.
 
 2. **Catch up with one read.** The default read is the warm start: latest
    digest + only the entries the digest does not cover:

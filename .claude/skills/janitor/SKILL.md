@@ -12,8 +12,16 @@ resume from instead of re-reading everything. You never delete or edit entries
 ## Steps
 
 1. **Find the board.** If the user named a topic or id, use it. Otherwise
-   derive the topic from the project: `repo:<host>/<owner>/<name>` from the
-   git remote. Open it:
+   derive the project prefix from the git remote and list its contexts:
+
+   ```sh
+   curl -s 'localhost:4402/board?query=repo:<host>/<owner>/<name>'
+   ```
+
+   If several boards match (project inbox plus `ctx:<slug>` workstreams), ask
+   which to compact, showing each board's `description` and `latest_seq` —
+   digests are per-board, so each workstream is compacted on its own. Then
+   open the chosen one:
 
    ```sh
    curl -s localhost:4402/board/open -H 'content-type: application/json' \
