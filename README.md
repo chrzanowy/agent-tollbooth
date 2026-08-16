@@ -93,6 +93,11 @@ directory into your own project's `.claude/skills/`, or use its contents as a
 system-prompt section for non-Claude harnesses (GPT, DeepSeek, GLM, Grok — the
 API is plain HTTP, so the same instructions work everywhere).
 
+For zero-token context capture, [`scripts/tollbooth-hook.mjs`](scripts/tollbooth-hook.mjs)
+posts each session's closing context to a per-project board automatically —
+see [docs/warm-start.md](docs/warm-start.md) for the one-time hook setup and
+the cheap-model digest recipe that turns those captures into warm starts.
+
 ## Configuration
 
 | Env var | Default | Meaning |

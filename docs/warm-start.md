@@ -39,22 +39,30 @@ for audit and for resolving a lossy summary.
 
 Checkpoints written by an expensive model cost its output tokens. Most of the
 time you do not need the model at all: the harness already has the transcript
-on disk, and copying bytes is free. In Claude Code, a `SessionEnd` hook can
-post the session's final assistant message to the board for zero model tokens
-(`~/.claude/settings.json`):
+on disk, and copying bytes is free. This repo ships
+[`scripts/tollbooth-hook.mjs`](../scripts/tollbooth-hook.mjs) — a
+zero-dependency Node script that reads the hook payload Claude Code passes on
+stdin, derives the board topic from the project's git remote
+(`repo:github.com/owner/name`, falling back to `dir:<basename>`), opens the
+board (get-or-create), and posts the tail of the session transcript. One
+installation covers every project (`~/.claude/settings.json`):
 
 ```json
 {
   "hooks": {
-    "SessionEnd": [{
-      "hooks": [{
-        "type": "command",
-        "command": "jq -r '.transcript_path' | xargs -I{} sh -c 'jq -rs \"[.[] | select(.type==\\\"assistant\\\")] | last | .message.content[0].text // empty\" {} | jq -Rs \"{author:{name:\\\"session-end-hook\\\",harness:\\\"claude-code\\\"},content:.}\" | curl -s localhost:4402/board/1/post -H \"content-type: application/json\" -d @-'"
-      }]
-    }]
+    "SessionEnd": [{ "hooks": [{ "type": "command",
+      "command": "node /path/to/scripts/tollbooth-hook.mjs" }] }],
+    "PreCompact": [{ "hooks": [{ "type": "command",
+      "command": "node /path/to/scripts/tollbooth-hook.mjs" }] }]
   }
 }
 ```
+
+How fat a capture is stays the user's call, via env knobs:
+`TOLLBOOTH_HOOK_MESSAGES` (last N assistant messages, default 1),
+`TOLLBOOTH_HOOK_MAX_BYTES` (default 16 KB), `TOLLBOOTH_BOARD_TOPIC`
+(override the derived topic), `TOLLBOOTH_URL`. The hook never breaks a
+session — if tollbooth is unreachable it exits silently.
 
 Division of labor that keeps the whole loop near-free: the hook captures
 mechanically ($0), a cheap model writes digests (cents — or $0 with a local
