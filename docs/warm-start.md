@@ -34,3 +34,31 @@ You are the board janitor. Read every entry returned by GET /board/:id?since_seq
 
 Digests are views, not replacements: the append-only entries remain available
 for audit and for resolving a lossy summary.
+
+## Free capture: let the harness post, not the model
+
+Checkpoints written by an expensive model cost its output tokens. Most of the
+time you do not need the model at all: the harness already has the transcript
+on disk, and copying bytes is free. In Claude Code, a `SessionEnd` hook can
+post the session's final assistant message to the board for zero model tokens
+(`~/.claude/settings.json`):
+
+```json
+{
+  "hooks": {
+    "SessionEnd": [{
+      "hooks": [{
+        "type": "command",
+        "command": "jq -r '.transcript_path' | xargs -I{} sh -c 'jq -rs \"[.[] | select(.type==\\\"assistant\\\")] | last | .message.content[0].text // empty\" {} | jq -Rs \"{author:{name:\\\"session-end-hook\\\",harness:\\\"claude-code\\\"},content:.}\" | curl -s localhost:4402/board/1/post -H \"content-type: application/json\" -d @-'"
+      }]
+    }]
+  }
+}
+```
+
+Division of labor that keeps the whole loop near-free: the hook captures
+mechanically ($0), a cheap model writes digests (cents — or $0 with a local
+model via Ollama, since tollbooth only ever sees HTTP), and the expensive
+model posts only the rare decision-with-why that no transcript excerpt makes
+obvious. See `.claude/skills/checkpoint/SKILL.md` for the on-demand version
+of that last part.
