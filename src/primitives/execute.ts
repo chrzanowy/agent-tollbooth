@@ -38,14 +38,25 @@ export async function run(
 
   const started = Date.now();
   return await new Promise<ExecuteResult>((resolve) => {
-    const child = spawn(lang.cmd, lang.args(file), { cwd: dir });
+    // detached → own process group, so the timeout can kill the whole tree
+    // (killing just the shell leaves orphans holding the stdio pipes open).
+    const child = spawn(lang.cmd, lang.args(file), { cwd: dir, detached: true });
     let stdout = "";
     let stderr = "";
     let timedOut = false;
 
+    const killTree = () => {
+      try {
+        if (child.pid) process.kill(-child.pid, "SIGKILL");
+        else child.kill("SIGKILL");
+      } catch {
+        child.kill("SIGKILL");
+      }
+    };
+
     const timer = setTimeout(() => {
       timedOut = true;
-      child.kill("SIGKILL");
+      killTree();
     }, cappedTimeout);
 
     child.stdout.on("data", (d: Buffer) => {
@@ -55,8 +66,12 @@ export async function run(
       if (stderr.length < OUTPUT_CAP) stderr += d.toString();
     });
 
+    let finished = false;
     const finish = (exitCode: number | null) => {
+      if (finished) return;
+      finished = true;
       clearTimeout(timer);
+      killTree(); // reap any orphaned grandchildren
       rmSync(dir, { recursive: true, force: true });
       resolve({
         exit_code: exitCode,
@@ -71,6 +86,9 @@ export async function run(
       stderr += `\nspawn error: ${err.message}`;
       finish(null);
     });
-    child.on("close", (code) => finish(code));
+    // 'close' waits for stdio pipes, which an orphaned grandchild can hold
+    // open past the timeout — resolve on 'exit' (with a short grace period
+    // for the streams to flush) instead.
+    child.on("exit", (code) => setTimeout(() => finish(code), 25));
   });
 }

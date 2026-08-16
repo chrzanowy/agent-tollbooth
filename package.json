@@ -12,6 +12,7 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsx src/index.ts",
+    "bench": "tsx scripts/bench.ts",
     "start": "node dist/index.js",
     "typecheck": "tsc --noEmit"
   },
