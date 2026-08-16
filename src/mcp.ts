@@ -6,6 +6,7 @@ import * as memory from "./primitives/memory.js";
 import * as watch from "./primitives/watch.js";
 import * as render from "./primitives/render.js";
 import * as execute from "./primitives/execute.js";
+import * as board from "./primitives/board.js";
 
 function asText(payload: unknown) {
   return { content: [{ type: "text" as const, text: JSON.stringify(payload, null, 2) }] };
@@ -111,6 +112,79 @@ export function buildMcpServer(): McpServer {
     },
     async ({ language, code, timeout_ms }) =>
       asText(await withReceipt("execute.run", () => execute.run(language, code, timeout_ms))),
+  );
+
+  const authorSchema = z
+    .object({
+      name: z.string(),
+      model: z.string().optional(),
+      harness: z.string().optional(),
+    })
+    .strict();
+
+  server.registerTool(
+    "board_open",
+    {
+      description: describe("board.open"),
+      inputSchema: { topic: z.string() },
+    },
+    async ({ topic }) => asText(await withReceipt("board.open", async () => board.open(topic))),
+  );
+
+  server.registerTool(
+    "board_list",
+    {
+      description: describe("board.open"),
+      inputSchema: { query: z.string().optional() },
+    },
+    async ({ query }) => asText(await withReceipt("board.open", async () => board.listBoards(query))),
+  );
+
+  server.registerTool(
+    "board_post",
+    {
+      description: describe("board.post"),
+      inputSchema: {
+        board_id: z.number().int(),
+        author: authorSchema,
+        content: z.string(),
+      },
+    },
+    async ({ board_id, author, content }) =>
+      asText(await withReceipt("board.post", async () => board.post(board_id, author, content))),
+  );
+
+  server.registerTool(
+    "board_read",
+    {
+      description: describe("board.read"),
+      inputSchema: {
+        board_id: z.number().int(),
+        since_seq: z.number().int().nonnegative().optional(),
+        limit: z.number().int().positive().optional(),
+      },
+    },
+    async ({ board_id, since_seq, limit }) =>
+      asText(await withReceipt("board.read", async () => board.read(board_id, since_seq, limit))),
+  );
+
+  server.registerTool(
+    "board_digest",
+    {
+      description: describe("board.digest"),
+      inputSchema: {
+        board_id: z.number().int(),
+        author: authorSchema,
+        content: z.string(),
+        expected_version: z.number().int().nonnegative(),
+      },
+    },
+    async ({ board_id, author, content, expected_version }) =>
+      asText(
+        await withReceipt("board.digest", async () =>
+          board.writeDigest(board_id, author, content, expected_version),
+        ),
+      ),
   );
 
   return server;

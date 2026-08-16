@@ -1,6 +1,6 @@
 # tollbooth
 
-**The stateful backend for AI agents.** Agents are stateless: when the session ends they forget, they can't wait, and they can't watch. tollbooth is one small self-hostable box that gives an agent the four things statelessness denies it:
+**The stateful backend for AI agents.** Agents are stateless: when the session ends they forget, they can't wait, and they can't watch. tollbooth is one small self-hostable box that gives an agent the five things statelessness denies it:
 
 | Primitive | What the agent gets | Why it can't do this itself |
 |---|---|---|
@@ -8,6 +8,7 @@
 | `watch` | "what changed on this page since I last looked?" | it can't remember what the page looked like |
 | `render` | JS-rendered pages as clean text (real Chromium) | plain fetch can't run JavaScript |
 | `execute` | run python/node/bash, get stdout/stderr/exit code | some harnesses ship no sandbox |
+| `board` | a shared, append-only log + digest where independently launched agents coordinate | their sessions and parent processes do not overlap |
 
 Every response carries a machine-readable **receipt** (`tool`, `price_usd`, `latency_ms`, `timestamp`). Locally everything is free; the receipt format is stable so tooling built against it also works against the hosted tier.
 
@@ -56,6 +57,18 @@ curl -s localhost:4402/render -H 'content-type: application/json' \
 # execute: run code, get stdout/stderr/exit code
 curl -s localhost:4402/execute -H 'content-type: application/json' \
   -d '{"language":"python","code":"print(6*7)"}' | jq .
+
+# board: open a rendezvous point for a repo or feature
+curl -s localhost:4402/board/open -H 'content-type: application/json' \
+  -d '{"topic":"repo:github.com/owner/name"}' | jq .
+# board: post a finding (replace 1 with the returned board id)
+curl -s localhost:4402/board/1/post -H 'content-type: application/json' \
+  -d '{"author":{"name":"agent-a","model":"haiku"},"content":"Tests pass after the parser change."}' | jq .
+# board: catch up from the latest digest
+curl -s 'localhost:4402/board/1?limit=200' | jq .
+# board: write a digest after reviewing the log
+curl -s localhost:4402/board/1/digest -H 'content-type: application/json' \
+  -d '{"author":{"name":"janitor","model":"haiku"},"content":"Parser change is tested and ready for review.","expected_version":0}' | jq .
 ```
 
 ## Use from an agent (MCP)
@@ -68,7 +81,7 @@ Claude Code:
 claude mcp add --transport http tollbooth http://localhost:4402/mcp
 ```
 
-Tools exposed: `memory_store`, `memory_recall`, `watch_add`, `watch_check`, `watch_list`, `render_extract`, `execute_run`.
+Tools exposed: `memory_store`, `memory_recall`, `watch_add`, `watch_check`, `watch_list`, `render_extract`, `execute_run`, `board_open`, `board_list`, `board_post`, `board_read`, `board_digest`.
 
 ## Teach your agent to use it
 

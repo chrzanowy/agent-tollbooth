@@ -7,6 +7,7 @@ mkdirSync(dataDir, { recursive: true });
 
 export const db = new DatabaseSync(path.join(dataDir, "tollbooth.db"));
 db.exec("PRAGMA journal_mode = WAL");
+db.exec("PRAGMA foreign_keys = ON");
 
 db.exec(`
 CREATE TABLE IF NOT EXISTS memories (
@@ -36,4 +37,33 @@ CREATE TABLE IF NOT EXISTS snapshots (
   content TEXT NOT NULL,
   fetched_at TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS boards (
+  id INTEGER PRIMARY KEY,
+  topic TEXT NOT NULL UNIQUE,
+  created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS board_entries (
+  id INTEGER PRIMARY KEY,
+  board_id INTEGER NOT NULL REFERENCES boards(id) ON DELETE CASCADE,
+  seq INTEGER NOT NULL,
+  author TEXT NOT NULL,
+  content TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  UNIQUE(board_id, seq)
+);
+
+CREATE TABLE IF NOT EXISTS board_digests (
+  id INTEGER PRIMARY KEY,
+  board_id INTEGER NOT NULL REFERENCES boards(id) ON DELETE CASCADE,
+  version INTEGER NOT NULL,
+  covers_seq INTEGER NOT NULL,
+  author TEXT NOT NULL,
+  content TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  UNIQUE(board_id, version)
+);
+
+CREATE INDEX IF NOT EXISTS idx_board_entries ON board_entries(board_id, seq);
 `);

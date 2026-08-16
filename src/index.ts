@@ -8,6 +8,7 @@ import * as memory from "./primitives/memory.js";
 import * as watch from "./primitives/watch.js";
 import * as render from "./primitives/render.js";
 import * as execute from "./primitives/execute.js";
+import * as board from "./primitives/board.js";
 
 const app = express();
 app.use(express.json({ limit: "10mb" }));
@@ -26,10 +27,45 @@ function handle(tool: string, fn: (req: Request) => Promise<unknown>) {
       res.json(await withReceipt(tool, () => fn(req)));
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      const status = err instanceof render.RenderUnavailableError ? 501 : 400;
-      res.status(status).json({ error: message, tool });
+      const status =
+        err instanceof board.DigestConflictError
+          ? 409
+          : err instanceof render.RenderUnavailableError
+            ? 501
+            : 400;
+      res.status(status).json({
+        error: message,
+        tool,
+        ...(err instanceof board.DigestConflictError ? { current_version: err.currentVersion } : {}),
+      });
     }
   };
+}
+
+function bodyWithKeys(req: Request, keys: string[]): Record<string, unknown> {
+  const body = req.body;
+  if (typeof body !== "object" || body === null || Array.isArray(body)) {
+    throw new Error("request body must be an object");
+  }
+  if (Object.keys(body).some((key) => !keys.includes(key))) {
+    throw new Error(`request body contains unknown fields`);
+  }
+  return body as Record<string, unknown>;
+}
+
+function pathId(raw: string): number {
+  if (!/^\d+$/.test(raw)) throw new Error("id must be a positive integer");
+  const id = Number(raw);
+  if (!Number.isSafeInteger(id) || id < 1) throw new Error("id must be a positive integer");
+  return id;
+}
+
+function queryInteger(raw: unknown, name: string): number | undefined {
+  if (raw === undefined) return undefined;
+  if (typeof raw !== "string" || !/^\d+$/.test(raw)) throw new Error(`${name} must be a non-negative integer`);
+  const value = Number(raw);
+  if (!Number.isSafeInteger(value)) throw new Error(`${name} must be a non-negative integer`);
+  return value;
 }
 
 // ---- memory ------------------------------------------------------------------
@@ -82,6 +118,69 @@ app.post(
 app.delete(
   "/watch/:id",
   handle("watch.add", async (req) => ({ deleted: watch.remove(Number(req.params.id)) })),
+);
+
+// ---- board -------------------------------------------------------------------
+
+app.post(
+  "/board/open",
+  handle("board.open", async (req) => {
+    const body = bodyWithKeys(req, ["topic"]);
+    if (typeof body.topic !== "string") throw new Error("topic (string) is required");
+    return board.open(body.topic);
+  }),
+);
+
+app.get(
+  "/board",
+  handle("board.open", async (req) => {
+    const query = req.query.query;
+    if (query !== undefined && typeof query !== "string") throw new Error("query must be a string");
+    return board.listBoards(query);
+  }),
+);
+
+app.post(
+  "/board/:id/post",
+  handle("board.post", async (req) => {
+    const body = bodyWithKeys(req, ["author", "content"]);
+    if (typeof body.content !== "string") throw new Error("content (string) is required");
+    return board.post(pathId(req.params.id), body.author as board.Author, body.content);
+  }),
+);
+
+app.get(
+  "/board/:id/digests",
+  handle("board.read", async (req) => board.listDigests(pathId(req.params.id))),
+);
+
+app.get(
+  "/board/:id",
+  handle("board.read", async (req) => {
+    const sinceSeq = queryInteger(req.query.since_seq, "since_seq");
+    const limit = queryInteger(req.query.limit, "limit");
+    return board.read(pathId(req.params.id), sinceSeq, limit);
+  }),
+);
+
+app.post(
+  "/board/:id/digest",
+  handle("board.digest", async (req) => {
+    const body = bodyWithKeys(req, ["author", "content", "expected_version"]);
+    if (typeof body.content !== "string") throw new Error("content (string) is required");
+    if (typeof body.expected_version !== "number") throw new Error("expected_version (number) is required");
+    return board.writeDigest(
+      pathId(req.params.id),
+      body.author as board.Author,
+      body.content,
+      body.expected_version,
+    );
+  }),
+);
+
+app.delete(
+  "/board/:id",
+  handle("board.open", async (req) => ({ deleted: board.removeBoard(pathId(req.params.id)) })),
 );
 
 // ---- render ------------------------------------------------------------------

@@ -20,6 +20,10 @@ const cloudPrices: Record<string, number> = {
   "watch.check": 0.01,
   "render.extract": 0.02,
   "execute.run": 0.01,
+  "board.open": 0.001,
+  "board.post": 0.002,
+  "board.read": 0.002,
+  "board.digest": 0.005,
 };
 
 function price(name: string): number {
@@ -75,6 +79,38 @@ export const CATALOG: CatalogEntry[] = [
     expected_latency_ms: 2000,
     requires: "somewhere to execute code",
   },
+  {
+    name: "board.open",
+    description:
+      "Open or rendezvous with a shared board by topic; agents working the same repo/feature should derive the topic deterministically, e.g. `repo:github.com/owner/name` or `feature:<slug>`.",
+    price_usd: price("board.open"),
+    expected_latency_ms: 10,
+    requires: "a rendezvous point agents can find without a shared parent",
+  },
+  {
+    name: "board.post",
+    description:
+      "Append an immutable discovery or checkpoint to a shared board for teammates and future sessions.",
+    price_usd: price("board.post"),
+    expected_latency_ms: 10,
+    requires: "a concurrency-safe log that outlives every participant",
+  },
+  {
+    name: "board.read",
+    description:
+      "Catch up on a board with its latest digest and entries posted since the supplied or digested cursor.",
+    price_usd: price("board.read"),
+    expected_latency_ms: 10,
+    requires: "catching up on what other agents learned while you did not exist",
+  },
+  {
+    name: "board.digest",
+    description:
+      "Write a versioned compact board digest that cheap models can maintain and expensive models can resume from.",
+    price_usd: price("board.digest"),
+    expected_latency_ms: 15,
+    requires: "a compacted view cheap models write and expensive models resume from",
+  },
 ];
 
 export function catalogDocument() {
@@ -83,7 +119,7 @@ export function catalogDocument() {
     version: "0.1.0",
     tier: TIER,
     description:
-      "The stateful backend for AI agents: memory, watch, render, execute. Every response carries a receipt.",
+      "The stateful backend for AI agents: memory, watch, render, execute, and board. Every response carries a receipt.",
     interfaces: {
       http: "/  (see routes below)",
       mcp: "/mcp (MCP streamable HTTP)",
