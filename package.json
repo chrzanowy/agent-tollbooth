@@ -1,6 +1,6 @@
 {
   "name": "tollbooth",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "The stateful backend for AI agents — memory, watch, render, execute. Self-hostable, agent-native, receipt-first.",
   "type": "module",
   "license": "MIT",

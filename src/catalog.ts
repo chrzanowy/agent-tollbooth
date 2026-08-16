@@ -116,7 +116,7 @@ export const CATALOG: CatalogEntry[] = [
 export function catalogDocument() {
   return {
     service: "tollbooth",
-    version: "0.1.0",
+    version: "0.1.1",
     tier: TIER,
     description:
       "The stateful backend for AI agents: memory, watch, render, execute, and board. Every response carries a receipt.",
