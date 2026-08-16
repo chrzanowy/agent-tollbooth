@@ -1,0 +1,11 @@
+services:
+  tollbooth:
+    build: .
+    ports:
+      - "4402:4402"
+    volumes:
+      - tollbooth-data:/data
+    restart: unless-stopped
+
+volumes:
+  tollbooth-data:
