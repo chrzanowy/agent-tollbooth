@@ -1,6 +1,6 @@
 ---
-name: resume
-description: Resume long-running work from a tollbooth board instead of re-reading old transcripts. Invoke when the user says "resume", "continue where we left off", "catch up on <topic>", "read the board and continue", or at the start of a session in a project with an active board.
+name: warmstart
+description: Resume long-running work from a tollbooth board instead of re-reading old transcripts. Invoke when the user says "warmstart", "warm start from the board", "continue where we left off", "catch up on <topic>", "read the board and continue", or at the start of a session in a project with an active board. (Named warmstart because /resume is a reserved Claude Code built-in.)
 ---
 
 # resume — warm-start from a board

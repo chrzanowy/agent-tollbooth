@@ -93,7 +93,7 @@ four skills under [`.claude/skills/`](.claude/skills/):
 | `tollbooth` | when to use each primitive — and when not to bother |
 | `checkpoint` | on-demand: save this session's durable conclusions to the board |
 | `janitor` | compact a board into a digest (run it with a cheap model) |
-| `resume` | warm-start a new session from a board instead of re-reading transcripts |
+| `warmstart` | warm-start a new session from a board instead of re-reading transcripts (named to avoid the reserved `/resume` built-in) |
 
 Copy them into `~/.claude/skills/` to have them in every project (or into one
 project's `.claude/skills/`), or use their contents as system-prompt sections
